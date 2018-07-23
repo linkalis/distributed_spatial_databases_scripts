@@ -1,0 +1,62 @@
+version: "3.3"
+
+# https://github.com/chefsplate/mongo-shard-docker-compose/blob/master/docker-compose.yml
+
+volumes: # https://github.com/docker/compose/issues/2957
+  mongo_shard01_vol:
+  mongo_shard02_vol:
+
+services:
+
+  ## Config server
+  mongo_configsvr:
+    image: mongo
+    command: mongod --port 27019 --configsvr --replSet "configserver" --bind_ip_all
+    ports:
+      - "27019:27019"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+
+  ## Shards
+  mongo_shard01:
+    image: mongo
+    command: mongod --port 27018 --shardsvr --replSet "shard01" --bind_ip_all
+    ports:
+      - "27018:27018"
+    volumes:
+      - type: volume
+        source: mongo_shard01_vol
+        target: /data/db
+    deploy:
+      placement:
+        constraints: [node.hostname == ubuntunode2]
+
+  mongo_shard02:
+    image: mongo
+    command: mongod --port 27020 --shardsvr --replSet "shard02" --bind_ip_all
+    ports:
+      - "27020:27020"
+    volumes:
+      - type: volume
+        source: mongo_shard02_vol
+        target: /data/db
+    deploy:
+      placement:
+        constraints: [node.hostname == ubuntunode3]
+
+
+  ## Router
+  mongo_router: # put a constraint on this so it's always deployed to manager node
+    image: mongo
+    #command: mongos --port 27017 --configdb configserver/mongodb_configsvr:27017 --bind_ip_all
+    ports:
+      - "27017:27017"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+    depends_on:
+      - mongo_configsvr
+      - mongo_shard01
+      - mongo_shard02
