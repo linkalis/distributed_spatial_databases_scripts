@@ -50,7 +50,7 @@ services:
   ## Router
   mongo_router:
     image: mongo
-    #command: mongos --port 27017 --configdb configserver/mongodb_configsvr:27017 --bind_ip_all
+    #command: mongos --port 27017 --configdb configserver/mongodb_configsvr:27019 --bind_ip_all
     ports:
       - "27017:27017"
     deploy:
@@ -60,3 +60,24 @@ services:
       - mongo_configsvr
       - mongo_shard01
       - mongo_shard02
+
+
+volumes:
+  mongo_shard01_vol0:
+    driver: "cloudstor:aws"
+    driver_opts:
+      backing: relocatable
+      size: 20
+      ebstype: gp2
+  mongo_shard01_vol1:
+    driver: "cloudstor:aws"
+    driver_opts:
+      backing: relocatable
+      size: 20
+      ebstype: gp2
+  mongo_shard01_vol2:
+    driver: "cloudstor:aws"
+    driver_opts:
+      backing: relocatable
+      size: 20
+      ebstype: gp2
