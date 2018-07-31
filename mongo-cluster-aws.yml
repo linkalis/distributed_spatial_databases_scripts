@@ -1,83 +1,221 @@
 version: "3.3"
 
 # https://github.com/chefsplate/mongo-shard-docker-compose/blob/master/docker-compose.yml
-
-volumes: # https://github.com/docker/compose/issues/2957
-  mongo_shard01_vol:
-  mongo_shard02_vol:
+# https://medium.com/@oclausen/deploying-a-mongodb-replica-set-on-aws-docker-swarm-c1c785b61aa9
 
 services:
 
   ## Config server
-  mongo_configsvr:
-    image: mongo
-    command: mongod --port 27019 --configsvr --replSet "configserver" --bind_ip_all
+  mongo_configsvr_a:
+    image: mongo:4.0
+    command: mongod --config /etc/mongod.conf
     ports:
       - "27019:27019"
+    volumes:
+      - mongo_configsvr_a:/data/db
+      - /home/docker/mongo_config_files/configsvr/mongod.conf:/etc/mongod.conf
     deploy:
       placement:
-        constraints: [node.role == manager] # put a constraint on this so it's always deployed to manager node
+        constraints: [node.role == manager] # put a constraint on this so it's always deployed to manager nodes
+
+  mongo_configsvr_b:
+    image: mongo:4.0
+    command: mongod --config /etc/mongod.conf
+    ports:
+      - "27020:27019"
+    volumes:
+      - mongo_configsvr_b:/data/db
+      - /home/docker/mongo_config_files/configsvr/mongod.conf:/etc/mongod.conf
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+  mongo_configsvr_a:
+    image: mongo:4.0
+    command: mongod --config /etc/mongod.conf
+    ports:
+      - "27021:27019"
+    volumes:
+      - mongo_configsvr_c:/data/db
+      - /home/docker/mongo_config_files/configsvr/mongod.conf:/etc/mongod.conf
+    deploy:
+      placement:
+        constraints: [node.role == manager]
 
 
   ## Shards
-  mongo_shard01:
-    image: mongo
-    command: mongod --port 27018 --shardsvr --replSet "shard01" --bind_ip_all
+  mongo_shard01_a:
+    image: mongo:4.0
+    command: mongod --config /etc/mongod.conf
     ports:
-      - "27018:27018"
+      - "27011:27018"
     volumes:
-      - type: volume
-        source: mongo_shard01_vol
-        target: /data/db
+      - mongo_shard01_a:/data/db
+      - /home/docker/mongo_config_files/shard01/mongod.conf:/etc/mongod.conf
     deploy:
+      restart_policy:
+        condition: any
+        delay: 30s
+        window: 60s
       placement:
-        constraints: [node.hostname == ubuntunode2]
+        constraints: [node.role == worker]
 
-  mongo_shard02:
-    image: mongo
-    command: mongod --port 27020 --shardsvr --replSet "shard02" --bind_ip_all
+  mongo_shard01_b:
+    image: mongo:4.0
+    command: mongod --config /etc/mongod.conf
     ports:
-      - "27020:27020"
+      - "27013:27018"
     volumes:
-      - type: volume
-        source: mongo_shard02_vol
-        target: /data/db
+      - mongo_shard01_b:/data/db
+      - /home/docker/mongo_config_files/shard01/mongod.conf:/etc/mongod.conf
     deploy:
+      restart_policy:
+        condition: any
+        delay: 30s
+        window: 60s
       placement:
-        constraints: [node.hostname == ubuntunode3]
+        constraints: [node.role == worker]
+
+  mongo_shard01_c:
+    image: mongo:4.0
+    command: mongod --config /etc/mongod.conf
+    ports:
+      - "27015:27018"
+    volumes:
+      - mongo_shard01_c:/data/db
+      - /home/docker/mongo_config_files/shard01/mongod.conf:/etc/mongod.conf
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 30s
+        window: 60s
+      placement:
+        constraints: [node.role == worker]
+
+  mongo_shard02_a:
+    image: mongo:4.0
+    command: mongod --config /etc/mongod.conf
+    ports:
+      - "27012:27018"
+    volumes:
+      - mongo_shard02_a:/data/db
+      - /home/docker/mongo_config_files/shard02/mongod.conf:/etc/mongod.conf
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 30s
+        window: 60s
+      placement:
+        constraints: [node.role == worker]
+
+  mongo_shard02_b:
+    image: mongo:4.0
+    command: mongod --config /etc/mongod.conf
+    ports:
+      - "27014:27018"
+    volumes:
+      - mongo_shard02_b:/data/db
+      - /home/docker/mongo_config_files/shard02/mongod.conf:/etc/mongod.conf
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 30s
+        window: 60s
+      placement:
+        constraints: [node.role == worker]
+
+  mongo_shard02_c:
+    image: mongo:4.0
+    command: mongod --config /etc/mongod.conf
+    ports:
+      - "27016:27018"
+    volumes:
+      - mongo_shard02_c:/data/db
+      - /home/docker/mongo_config_files/shard02/mongod.conf:/etc/mongod.conf
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 30s
+        window: 60s
+      placement:
+        constraints: [node.role == worker]
 
 
   ## Router
-  mongo_router:
-    image: mongo
-    #command: mongos --port 27017 --configdb configserver/mongodb_configsvr:27019 --bind_ip_all
+  mongos_router:
+    image: mongo:4.0
+    #command: mongos --config /etc/mongos.conf
     ports:
       - "27017:27017"
     deploy:
       placement:
         constraints: [node.role == manager]
     depends_on:
-      - mongo_configsvr
-      - mongo_shard01
-      - mongo_shard02
+      - mongo_configsvr_a
+      - mongo_configsvr_b
+      - mongo_configsvr_c
+      - mongo_shard01_a
+      - mongo_shard01_b
+      - mongo_shard01_c
+      - mongo_shard02_a
+      - mongo_shard02_b
+      - mongo_shard02_c
 
 
 volumes:
-  mongo_shard01_vol0:
+  mongo_configsvr_a:
     driver: "cloudstor:aws"
     driver_opts:
       backing: relocatable
-      size: 20
+      size: 5
       ebstype: gp2
-  mongo_shard01_vol1:
+  mongo_configsvr_b:
     driver: "cloudstor:aws"
     driver_opts:
       backing: relocatable
-      size: 20
+      size: 5
       ebstype: gp2
-  mongo_shard01_vol2:
+  mongo_configsvr_c:
     driver: "cloudstor:aws"
     driver_opts:
       backing: relocatable
-      size: 20
+      size: 5
+      ebstype: gp2
+
+  mongo_shard01_a:
+    driver: "cloudstor:aws"
+    driver_opts:
+      backing: relocatable
+      size: 30
+      ebstype: gp2
+  mongo_shard01_b:
+    driver: "cloudstor:aws"
+    driver_opts:
+      backing: relocatable
+      size: 30
+      ebstype: gp2
+  mongo_shard01_c:
+    driver: "cloudstor:aws"
+    driver_opts:
+      backing: relocatable
+      size: 30
+      ebstype: gp2
+
+  mongo_shard02_a:
+    driver: "cloudstor:aws"
+    driver_opts:
+      backing: relocatable
+      size: 30
+      ebstype: gp2
+  mongo_shard02_b:
+    driver: "cloudstor:aws"
+    driver_opts:
+      backing: relocatable
+      size: 30
+      ebstype: gp2
+  mongo_shard02_c:
+    driver: "cloudstor:aws"
+    driver_opts:
+      backing: relocatable
+      size: 30
       ebstype: gp2
