@@ -8,36 +8,33 @@ services:
   ## Config server
   mongo_configsvr_a:
     image: mongo:4.0
-    command: mongod --config /etc/mongod.conf
+    command: mongod --port 27019 --configsvr --replSet "configserver" --bind_ip_all
     ports:
       - "27019:27019"
     volumes:
       - mongo_configsvr_a:/data/db
-      - /home/docker/mongo_config_files/configsvr/mongod.conf:/etc/mongod.conf
     deploy:
       placement:
         constraints: [node.role == manager] # put a constraint on this so it's always deployed to manager nodes
 
   mongo_configsvr_b:
     image: mongo:4.0
-    command: mongod --config /etc/mongod.conf
+    command: mongod --port 27019 --configsvr --replSet "configserver" --bind_ip_all
     ports:
       - "27020:27019"
     volumes:
       - mongo_configsvr_b:/data/db
-      - /home/docker/mongo_config_files/configsvr/mongod.conf:/etc/mongod.conf
     deploy:
       placement:
         constraints: [node.role == manager]
 
-  mongo_configsvr_a:
+  mongo_configsvr_c:
     image: mongo:4.0
-    command: mongod --config /etc/mongod.conf
+    command: mongod --port 27019 --configsvr --replSet "configserver" --bind_ip_all
     ports:
       - "27021:27019"
     volumes:
       - mongo_configsvr_c:/data/db
-      - /home/docker/mongo_config_files/configsvr/mongod.conf:/etc/mongod.conf
     deploy:
       placement:
         constraints: [node.role == manager]
@@ -46,12 +43,11 @@ services:
   ## Shards
   mongo_shard01_a:
     image: mongo:4.0
-    command: mongod --config /etc/mongod.conf
+    command: mongod --port 27018 --shardsvr --replSet "shard01" --bind_ip_all
     ports:
       - "27011:27018"
     volumes:
       - mongo_shard01_a:/data/db
-      - /home/docker/mongo_config_files/shard01/mongod.conf:/etc/mongod.conf
     deploy:
       restart_policy:
         condition: any
@@ -62,12 +58,11 @@ services:
 
   mongo_shard01_b:
     image: mongo:4.0
-    command: mongod --config /etc/mongod.conf
+    command: mongod --port 27018 --shardsvr --replSet "shard01" --bind_ip_all
     ports:
       - "27013:27018"
     volumes:
       - mongo_shard01_b:/data/db
-      - /home/docker/mongo_config_files/shard01/mongod.conf:/etc/mongod.conf
     deploy:
       restart_policy:
         condition: any
@@ -78,12 +73,11 @@ services:
 
   mongo_shard01_c:
     image: mongo:4.0
-    command: mongod --config /etc/mongod.conf
+    command: mongod --port 27018 --shardsvr --replSet "shard01" --bind_ip_all
     ports:
       - "27015:27018"
     volumes:
       - mongo_shard01_c:/data/db
-      - /home/docker/mongo_config_files/shard01/mongod.conf:/etc/mongod.conf
     deploy:
       restart_policy:
         condition: any
@@ -94,12 +88,11 @@ services:
 
   mongo_shard02_a:
     image: mongo:4.0
-    command: mongod --config /etc/mongod.conf
+    command: mongod --port 27018 --shardsvr --replSet "shard02" --bind_ip_all
     ports:
       - "27012:27018"
     volumes:
       - mongo_shard02_a:/data/db
-      - /home/docker/mongo_config_files/shard02/mongod.conf:/etc/mongod.conf
     deploy:
       restart_policy:
         condition: any
@@ -110,12 +103,11 @@ services:
 
   mongo_shard02_b:
     image: mongo:4.0
-    command: mongod --config /etc/mongod.conf
+    command: mongod --port 27018 --shardsvr --replSet "shard02" --bind_ip_all
     ports:
       - "27014:27018"
     volumes:
       - mongo_shard02_b:/data/db
-      - /home/docker/mongo_config_files/shard02/mongod.conf:/etc/mongod.conf
     deploy:
       restart_policy:
         condition: any
@@ -126,12 +118,11 @@ services:
 
   mongo_shard02_c:
     image: mongo:4.0
-    command: mongod --config /etc/mongod.conf
+    command: mongod --port 27018 --shardsvr --replSet "shard02" --bind_ip_all
     ports:
       - "27016:27018"
     volumes:
       - mongo_shard02_c:/data/db
-      - /home/docker/mongo_config_files/shard02/mongod.conf:/etc/mongod.conf
     deploy:
       restart_policy:
         condition: any
